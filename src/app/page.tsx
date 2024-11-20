@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,10 +10,11 @@ import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import MessageLoading from "@/components/ui/chat/message-loading";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import runAgent from "@/lib/agent";
-import { CornerDownLeft } from "lucide-react";
+import { CornerDownLeft, Github, Paintbrush } from "lucide-react";
 import { useActionState, useEffect, useMemo, useRef } from "react";
 import { LocalStoragePreset } from "lowdb/browser";
 import { Content } from "@google/generative-ai";
+import Link from "next/link";
 
 export default function Home() {
   const storage = useMemo(
@@ -52,18 +54,51 @@ export default function Home() {
           <h1 className="text-xl font-semibold text-foreground/80">
             Humor AI 😅
           </h1>
-          <nav className="ml-auto">
+          <nav className="ml-auto flex items-center gap-2">
+            <Button
+              variant={"outline"}
+              size={"icon"}
+              onClick={() => {
+                storage.data = [];
+                storage.write();
+                window.location.reload();
+              }}
+            >
+              <Paintbrush />
+            </Button>
             <ModeToggle />
+            <Link href={"https://github.com/Zain-ul-din/humorous-ai-agent"}>
+              <Button variant={"link"} size={"icon"}>
+                <Github />
+              </Button>
+            </Link>
           </nav>
         </header>
         <section className="w-full px-4 py-8 flex-1 overflow-y-auto">
           <ChatMessageList ref={msgListRef}>
             {messages.map((message, i) => {
               const variant = message.role === "user" ? "sent" : "received";
+              const isImage =
+                variant === "received" &&
+                (message.parts[0].text?.startsWith("https") ||
+                  message.parts[0].text?.startsWith("/"));
+
               return (
                 <ChatBubble variant={variant} key={i}>
                   <ChatBubbleMessage variant={variant}>
-                    {message.parts[0].text}
+                    {isImage ? (
+                      <>
+                        <img
+                          src={message.parts[0].text}
+                          alt={message.parts[0].text}
+                          className="md:w-full flex mb-2 max-w-[500px] object-cover"
+                          width={300}
+                          height={300}
+                        />
+                      </>
+                    ) : (
+                      <>{message.parts[0].text}</>
+                    )}
                   </ChatBubbleMessage>
                 </ChatBubble>
               );
@@ -88,7 +123,7 @@ export default function Home() {
             className="min-h-12 resize-none rounded-lg bg-background border-0 p-3 shadow-none focus-visible:ring-0"
           />
           <div className="flex items-center p-3 pt-0">
-            <Button size="sm" className="ml-auto gap-1.5">
+            <Button size="sm" className="ml-auto gap-1.5" disabled={isLoading}>
               Send Message
               <CornerDownLeft className="size-3.5" />
             </Button>
