@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import {
   ChatBubble,
@@ -5,10 +6,45 @@ import {
 } from "@/components/ui/chat/chat-bubble";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
+import MessageLoading from "@/components/ui/chat/message-loading";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import runAgent from "@/lib/agent";
 import { CornerDownLeft } from "lucide-react";
+import { useActionState, useEffect, useMemo, useRef } from "react";
+import { LocalStoragePreset } from "lowdb/browser";
+import { Content } from "@google/generative-ai";
 
 export default function Home() {
+  const storage = useMemo(
+    () => LocalStoragePreset<Content[]>("messages", []),
+    []
+  );
+
+  const dbMessages = useMemo(() => {
+    storage.read();
+    console.log("data: ", storage.data);
+    return storage.data;
+  }, [storage]);
+
+  const foo = dbMessages;
+
+  const [messages, action, isLoading] = useActionState(runAgent, foo);
+  const msgListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    storage.data = messages;
+    storage.write();
+  }, [storage, messages]);
+
+  useEffect(() => {
+    if (msgListRef.current) {
+      msgListRef.current!.scrollBy({
+        top: msgListRef.current!.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [messages]);
+
   return (
     <>
       <main className="w-screen mx-auto max-w-screen-lg h-[100svh] flex flex-col gap-4 px-2">
@@ -20,29 +56,35 @@ export default function Home() {
             <ModeToggle />
           </nav>
         </header>
-        <section className=" w-full px-4 py-8 flex-1 overflow-y-auto">
-          <ChatMessageList>
-            <ChatBubble variant="sent">
-              <ChatBubbleMessage variant="sent">
-                Hello, how has your day been? I hope you are doing well.
-              </ChatBubbleMessage>
-            </ChatBubble>
-            {new Array(3).fill("").map((_, i) => {
+        <section className="w-full px-4 py-8 flex-1 overflow-y-auto">
+          <ChatMessageList ref={msgListRef}>
+            {messages.map((message, i) => {
+              const variant = message.role === "user" ? "sent" : "received";
               return (
-                <ChatBubble variant="received" key={i}>
-                  <ChatBubbleMessage variant="received">
-                    Hi, I am doing well, thank you for asking. How can I help
-                    you today?
+                <ChatBubble variant={variant} key={i}>
+                  <ChatBubbleMessage variant={variant}>
+                    {message.parts[0].text}
                   </ChatBubbleMessage>
                 </ChatBubble>
               );
             })}
+            {isLoading && (
+              <ChatBubble variant={"received"}>
+                <ChatBubbleMessage variant={"received"}>
+                  <MessageLoading />
+                </ChatBubbleMessage>
+              </ChatBubble>
+            )}
           </ChatMessageList>
         </section>
 
-        <form className="relative rounded-lg border mt-auto bottom-6  bg-background focus-within:ring-1 focus-within:ring-ring p-1">
+        <form
+          action={action}
+          className="relative rounded-lg border mt-auto bottom-6  bg-background focus-within:ring-1 focus-within:ring-ring p-1"
+        >
           <ChatInput
             placeholder="Type your message here..."
+            name="message"
             className="min-h-12 resize-none rounded-lg bg-background border-0 p-3 shadow-none focus-visible:ring-0"
           />
           <div className="flex items-center p-3 pt-0">
