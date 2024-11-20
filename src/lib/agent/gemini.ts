@@ -5,7 +5,7 @@ const googleGenerativeAI = new GoogleGenerativeAI(
 );
 
 const gemini = googleGenerativeAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+  model: "models/gemini-1.5-pro"
 });
 
 export default gemini;
