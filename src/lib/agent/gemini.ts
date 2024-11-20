@@ -5,7 +5,10 @@ const googleGenerativeAI = new GoogleGenerativeAI(
 );
 
 const gemini = googleGenerativeAI.getGenerativeModel({
-  model: "models/gemini-1.5-pro"
+  model: "gemini-1.5-pro",
+  generationConfig: {
+    temperature: 1.0
+  }
 });
 
 export default gemini;
